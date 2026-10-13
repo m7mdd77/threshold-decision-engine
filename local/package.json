@@ -1,0 +1,18 @@
+{
+  "name": "threshold-decision-engine",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "An evidence-driven decision boundary for agent actions.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test test/*.test.js",
+    "check": "node --check server.js && node --check public/app.js && npm test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0"
+  }
+}
