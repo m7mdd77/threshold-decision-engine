@@ -1,3 +1,5 @@
+Current runtime: **GPT 6.1 Sol through AgentRouter**. See [configuration and verification](docs/sol-migration.md). Dated DeepSeek recordings remain historical evidence.
+
 # Threshold — The Decision Engine
 
 A working local prototype for the [DOO Decision Engine mission](https://build.doo.ooo/challenges/decision-engine). Threshold accepts a proposed agent action, derives permission from trusted evidence and a versioned policy, and returns **execute, ask, defer, escalate, or refuse**. A separate execution boundary checks everything again before applying a persistent sandbox write.
@@ -88,7 +90,7 @@ All POST requests need `Content-Type: application/json` and `X-CSRF-Token` from 
 - SQLite makes the local gate/write/receipt transaction atomic. Real external writes require provider idempotency, transactional outbox/reconciliation, and explicit handling of unknown outcomes; a local database transaction alone cannot make an external API atomic.
 - Audit hashes detect inconsistent edits relative to the stored chain. An administrator can rewrite the entire database and chain. Independent authenticity requires externally anchored or signed checkpoints.
 - Daily refund limits reset at UTC midnight. All refunds use a fixed USD unit and synthetic order records. Demo runs create independent records; they are not a production payment ledger.
-- The public demo is live at https://threshold-decision-engine.choggyacc.chatgpt.site. Public source: https://github.com/m7mdd77/threshold-decision-engine. A captioned 90-second walkthrough is included. No competition submission has been sent.
+- The public demo is live at https://threshold-decision-engine.choggyacc.chatgpt.site. Public GitHub publication is blocked by missing CLI authentication; sanitized source is prepared. A captioned 90-second walkthrough is included. No competition submission has been sent.
 - Before a public demo: enforce session/event quotas and persistent inference budgets, configure HTTPS and `PUBLIC_ORIGIN`, provision the supported client with persistent storage and backups, and run hosted smoke tests.
 - Before real operations: add verified service connectors, application authentication and role checks, signed approval bindings, outcome reconciliation, and calibrated uncertainty backed by observed failures.
 

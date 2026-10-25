@@ -5,23 +5,23 @@ import { scenarios, buildResource } from '../src/catalog.js';
 import { Store } from '../src/store.js';
 
 const resource = () => buildResource(scenarios.find(s => s.id === 'refund-safe'));
-const config = () => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret' });
+const config = () => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_API_FORMAT:'anthropic', AGENTROUTER_TRANSPORT:'api' });
 const proposal = { kind: 'proposal', proposal: { amount: 35, note: 'Refund the duplicate payment.' }, explanation: 'The customer requested a $35 refund.' };
 const response = (output = proposal, extra = {}) => new Response(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(output) }], usage: { input_tokens: 800, output_tokens: 120 }, ...extra }), { status: 200 });
 
-test('the configured Claude default uses AgentRouter Messages without exposing the key', () => {
-  const settings = config(); assert.equal(settings.endpoint, 'https://agentrouter.org/v1/messages'); assert.equal(settings.model, 'claude-opus-4-8'); assert.equal(settings.format, 'anthropic');
+test('the configured Sol default uses the supported Codex transport without exposing the key', () => {
+  const settings = readAgentConfig({AGENTROUTER_API_KEY:'unit-test-secret'}); assert.equal(settings.model,'gpt-6.1-sol'); assert.equal(settings.format,'openai'); assert.equal(settings.transport,'codex');
   const status = agentStatus({ AGENTROUTER_API_KEY: 'unit-test-secret' }); assert.equal(status.configured, true); assert.ok(!JSON.stringify(status).includes('unit-test-secret'));
 });
 test('missing keys produce a clear configuration state without making any call', () => {
   assert.equal(agentStatus({}).configured, false); assert.throws(() => readAgentConfig({}), /local .env/);
 });
 test('the explicit OpenAI format remains available without silently changing models', () => {
-  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
+  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_TRANSPORT:'api', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
   assert.equal(settings.endpoint, 'https://agentrouter.org/v1/chat/completions'); assert.equal(settings.model, 'deepseek-v4-flash');
 });
 test('credentials cannot be redirected to other hosts or placed in a URL', () => {
-  for (const base of ['http://agentrouter.org', 'https://other.example', 'https://agentrouter.org.evil.example', 'https://secret@agentrouter.org', 'https://agentrouter.org?key=secret', 'https://agentrouter.org:444', 'https://agentrouter.org/v1']) assert.throws(() => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_BASE_URL: base }));
+  for (const base of ['http://agentrouter.org', 'https://other.example', 'https://agentrouter.org.evil.example', 'https://secret@agentrouter.org', 'https://agentrouter.org?key=secret', 'https://agentrouter.org:444', 'https://agentrouter.org/v1']) assert.throws(() => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_BASE_URL: base, AGENTROUTER_API_FORMAT:'anthropic' }));
 });
 test('request bounds reject empty and oversized user input', () => {
   for (const value of ['', '  ', null, 42, 'x'.repeat(2001)]) assert.throws(() => validateAgentRequest(value));
@@ -57,7 +57,7 @@ test('Anthropic request uses server-side headers, bounded tokens, and normalized
   assert.deepEqual(output.usage, { prompt_tokens: 800, completion_tokens: 120, total_tokens: 920 });
 });
 test('OpenAI completion format validates content and normalizes token metadata', async () => {
-  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
+  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_TRANSPORT:'api', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
   const output = await proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: settings, fetchImpl: async (_url, options) => { assert.equal(options.headers.Authorization, 'Bearer unit-test-secret'); return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(proposal) } }], usage: { prompt_tokens: 800, completion_tokens: 120, total_tokens: 920 } })); } });
   assert.equal(output.kind, 'proposal'); assert.equal(output.usage.total_tokens, 920);
 });

@@ -40,7 +40,7 @@ async function handle(request:Request) {
     if(!row&&request.method==='GET'&&path==='/api/state')await create();
     if(!row)throw new WorkflowError(401,'Open the decision lab to start a sandbox.');
     const data=JSON.parse(row.payload),store=new HostedStore(data);
-    if(request.method==='GET'&&path==='/api/state')return reply({...await store.state(),csrf:data.csrf,policyVersion:POLICY_VERSION,domains,scenarios:scenarios.map(({facts,...scenario})=>scenario),publicDemo:true,agent:{configured:false,model:'deepseek-v4-flash',provider:'AgentRouter',message:'Paid inference is available only in the local build.'}},200,cookie);
+    if(request.method==='GET'&&path==='/api/state')return reply({...await store.state(),csrf:data.csrf,policyVersion:POLICY_VERSION,domains,scenarios:scenarios.map(({facts,...scenario})=>scenario),publicDemo:true,agent:{configured:false,model:'gpt-6.1-sol',provider:'AgentRouter',message:'Paid inference is available only in the local build.'}},200,cookie);
     if(request.method==='GET'&&path==='/api/audit')return reply({events:data.events,integrity:await store.verify()});
     if(request.method!=='POST')throw new WorkflowError(405,'Method not allowed.');
     if(request.headers.get('x-csrf-token')!==data.csrf)throw new WorkflowError(403,'Reload the lab before making a change.');

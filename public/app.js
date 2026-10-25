@@ -14,8 +14,8 @@ function renderAgent() {
   if (!state) return;
   $('#agent-status').textContent = state.agent?.configured ? state.agent.model : state.publicDemo ? 'LOCAL AI VERIFIED' : 'KEY REQUIRED';
   $('#generate-agent').disabled = pending || !state.agent?.configured;
-  $('#generate-agent').textContent = state.publicDemo ? 'DeepSeek is connected in the local build' : 'Let AI propose & evaluate ↗';
-  if (state.publicDemo) document.querySelector('.agent-box > .micro-copy').textContent = 'Public sandbox: structured proposals and server policy are live. Paid inference is local only. The verified DeepSeek run used 658 tokens; no key or account credits are exposed here.';
+  $('#generate-agent').textContent = state.publicDemo ? 'AI available in the local build' : 'Let AI propose & evaluate ↗';
+  if (state.publicDemo) document.querySelector('.agent-box > .micro-copy').textContent = 'AI proposals run in the local build. This public sandbox supports structured proposals and policy checks.';
   $('#agent-output').hidden = !agentOutput;
   if (agentOutput) {
     const usage = agentOutput.usage ?? agentOutput.record?.agent?.usage;

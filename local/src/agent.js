@@ -20,23 +20,23 @@ function providerError(status, payload) {
 
 export function readAgentConfig(env = process.env) {
   const key = env.AGENTROUTER_API_KEY?.trim();
-  const format = env.AGENTROUTER_API_FORMAT?.trim() || 'anthropic';
+  const format = env.AGENTROUTER_API_FORMAT?.trim() || 'openai';
   const base = env.AGENTROUTER_BASE_URL?.trim() || (format === 'anthropic' ? 'https://agentrouter.org' : 'https://agentrouter.org/v1');
-  const model = env.AGENTROUTER_MODEL?.trim() || 'claude-opus-4-8';
-  const transport = env.AGENTROUTER_TRANSPORT?.trim() || 'api';
+  const model = env.AGENTROUTER_MODEL?.trim() || 'gpt-6.1-sol';
+  const transport = env.AGENTROUTER_TRANSPORT?.trim() || 'codex';
   if (!key) throw new AgentError(503, 'not_configured', 'Add your AgentRouter key to the local .env file, then restart the website.');
   let url;
   try { url = new URL(base); } catch { throw new AgentError(503, 'invalid_configuration', 'AgentRouter configuration is invalid.'); }
   if (!['anthropic', 'openai'].includes(format)) throw new AgentError(503, 'invalid_configuration', 'Choose anthropic or openai for the AgentRouter API format.');
-  if (!['api', 'claude-code'].includes(transport)) throw new AgentError(503, 'invalid_configuration', 'Choose api or claude-code for the AgentRouter transport.');
+  if (!['api', 'claude-code', 'codex'].includes(transport)) throw new AgentError(503, 'invalid_configuration', 'Choose api or claude-code for the AgentRouter transport.');
   const validPath = format === 'anthropic' ? url.pathname === '/' : ['/v1', '/v1/'].includes(url.pathname);
   if (url.protocol !== 'https:' || !['agentrouter.org', 'co.agentrouter.org'].includes(url.hostname) || url.port || url.username || url.password || url.search || url.hash || !validPath) throw new AgentError(503, 'invalid_configuration', 'Use the AgentRouter HTTPS base URL: no /v1 for Anthropic, /v1 for OpenAI.');
   if (!/^[a-zA-Z0-9._:/-]{1,100}$/.test(model) || /[\r\n]/.test(key)) throw new AgentError(503, 'invalid_configuration', 'AgentRouter configuration is invalid.');
-  return { key, endpoint: `${url.origin}/v1/${format === 'anthropic' ? 'messages' : 'chat/completions'}`, model, format, transport, clientPath: env.CLAUDE_CODE_PATH?.trim() || (process.platform === 'win32' ? 'claude.exe' : 'claude') };
+  return { key, endpoint: `${url.origin}/v1/${format === 'anthropic' ? 'messages' : 'chat/completions'}`, model, format, transport, clientPath: env.CODEX_PATH?.trim() || (process.platform === 'win32' ? 'codex.exe' : 'codex') };
 }
 export function agentStatus(env = process.env) {
   try { const config = readAgentConfig(env); return { configured: true, provider: 'AgentRouter', model: config.model, format: config.format, transport: config.transport, promptVersion: PROMPT_VERSION }; }
-  catch (error) { return { configured: false, provider: 'AgentRouter', model: env.AGENTROUTER_MODEL?.trim() || 'claude-opus-4-8', promptVersion: PROMPT_VERSION, message: error.message }; }
+  catch (error) { return { configured: false, provider: 'AgentRouter', model: env.AGENTROUTER_MODEL?.trim() || 'gpt-6.1-sol', promptVersion: PROMPT_VERSION, message: error.message }; }
 }
 export function validateAgentRequest(request) {
   if (!text(request, 2000)) throw new AgentError(400, 'invalid_request', 'Enter an action request between 1 and 2,000 characters.');
@@ -88,12 +88,12 @@ export async function proposeWithAgent({ domain, request, resource, config, fetc
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const anthropic = config.format === 'anthropic' || config.transport === 'claude-code';
+    const anthropic = config.format === 'anthropic' || ['claude-code','codex'].includes(config.transport);
     const headers = anthropic ? { 'Content-Type': 'application/json', Authorization: `Bearer ${config.key}`, 'x-api-key': config.key, 'anthropic-version': '2023-06-01' } : { 'Content-Type': 'application/json', Authorization: `Bearer ${config.key}` };
     const payload = { model: config.model, messages: anthropic ? messages.slice(1) : messages, max_tokens: 768, stream: false };
     if (anthropic) payload.system = messages[0].content;
     let response, completion;
-    if (config.transport === 'claude-code') {
+    if (['claude-code','codex'].includes(config.transport)) {
       if (!clientDirectory) throw new AgentError(503, 'invalid_configuration', 'The supported client workspace has not been configured.');
       completion = await clientImpl({ config, messages, directory: clientDirectory, signal: controller.signal });
     } else if (anthropic) {

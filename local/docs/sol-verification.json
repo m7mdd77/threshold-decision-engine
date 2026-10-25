@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-25T05:21:23.407Z",
+  "model": "gpt-6.1-sol",
+  "runs": [
+    {
+      "name": "threshold",
+      "ok": true,
+      "model": "gpt-6.1-sol",
+      "kind": "clarification",
+      "usage": {
+        "prompt_tokens": 4538,
+        "completion_tokens": 436,
+        "cache_read_input_tokens": 0,
+        "total_tokens": 4974
+      }
+    }
+  ]
+}
