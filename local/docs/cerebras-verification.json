@@ -1,0 +1,36 @@
+{
+  "verifiedAt": "2026-10-28T07:30:49.965Z",
+  "provider": "Cerebras",
+  "model": "qwen-3.8-27b",
+  "scope": "Fresh genuine proposal-only migration checks on synthetic data. Existing operator allowance directories retained. No external actions or cached answers.",
+  "tests": {
+    "passed": 79,
+    "failed": 0,
+    "scope": "Local regression and mocked provider boundary tests; independent from the genuine call below."
+  },
+  "local": {
+    "name": "threshold",
+    "ok": true,
+    "model": "qwen-3.8-27b",
+    "kind": "proposal",
+    "usage": {
+      "prompt_tokens": 537,
+      "completion_tokens": 69,
+      "cache_read_input_tokens": 0,
+      "total_tokens": 606
+    },
+    "elapsedMs": 734
+  },
+  "publicVerification": {
+    "scope": "Public deterministic companion; paid model path remains local only. No public inference claimed."
+  },
+  "deployment": {
+    "name": "threshold",
+    "project_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b",
+    "version_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b~appgver_b75b7e760e7881919d7ec13e0f3b3d1a",
+    "deployment_id": "appgdep_6ae1a8a2cab88191be21ecbb09350cf4",
+    "status": "succeeded",
+    "url": "https://threshold-decision-engine.choggyacc.chatgpt.site",
+    "commit_sha": "40e3bec954fe782badb8f92bb487016f2e6c5339"
+  }
+}

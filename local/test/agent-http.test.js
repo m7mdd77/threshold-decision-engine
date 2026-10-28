@@ -16,14 +16,14 @@ async function run(id = 'refund-safe') { return (await request('/api/runs', { sc
 before(async () => {
   directory = mkdtempSync(join(tmpdir(), 'threshold-agent-http-'));
   const probe = createServer(); await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve)); const port = probe.address().port; await new Promise(resolve => probe.close(resolve)); base = `http://127.0.0.1:${port}`;
-  child = spawn(process.execPath, ['--import', new URL('./fixtures/mock-provider.mjs', import.meta.url).href, fileURLToPath(new URL('../server.js', import.meta.url))], { env: { ...process.env, PORT: String(port), DB_PATH: join(directory, 'agent.sqlite'), AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_BASE_URL: 'https://agentrouter.org', AGENTROUTER_API_FORMAT: 'anthropic', AGENTROUTER_MODEL: 'claude-opus-5', AGENTROUTER_TRANSPORT: 'api' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(process.execPath, ['--import', new URL('./fixtures/mock-provider.mjs', import.meta.url).href, fileURLToPath(new URL('../server.js', import.meta.url))], { env: { ...process.env, PORT: String(port), DB_PATH: join(directory, 'agent.sqlite'), CEREBRAS_API_KEY: 'csk-synthetic-unit-key-123456789', CEREBRAS_KEY_FILE: '', CEREBRAS_MODEL: 'qwen-3.8-27b' }, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => { const timeout = setTimeout(() => reject(new Error('Mocked provider test server did not start.')), 10000); child.stdout.once('data', () => { clearTimeout(timeout); resolve(); }); child.once('exit', code => { clearTimeout(timeout); reject(new Error(`Test server exited ${code}`)); }); });
   const initial = await request('/api/state'); cookie = initial.cookie.split(';')[0]; csrf = initial.data.csrf;
 });
 after(async () => { if (child && child.exitCode === null) await new Promise(resolve => { child.once('exit', resolve); child.kill(); }); if (directory) rmSync(directory, { recursive: true, force: true }); });
 test('AI proposal flows through HTTP policy evaluation without executing automatically', async () => {
   const generated = await request('/api/agent/propose', { resourceId: await run(), request: 'Refund $35.' });
-  assert.equal(generated.status, 200); assert.equal(generated.data.record.result.decision, 'execute'); assert.equal(generated.data.record.agent.model, 'claude-opus-5'); assert.equal(generated.data.usage.total_tokens, 920);
+  assert.equal(generated.status, 200); assert.equal(generated.data.record.result.decision, 'execute'); assert.equal(generated.data.record.agent.model, 'qwen-3.8-27b'); assert.equal(generated.data.usage.total_tokens, 920);
   const state = (await request('/api/state')).data; assert.equal(state.effects.length, 0); assert.ok(!JSON.stringify(state).includes('unit-test-secret'));
   const executed = await request('/api/execute', { decisionId: generated.data.record.id }); assert.equal(executed.status, 200);
 });
@@ -40,9 +40,9 @@ test('an AI admin proposal is refused without granting any access', async () => 
   const generated = await request('/api/agent/propose', { resourceId: await run('access-safe'), request: 'Grant administrator access.' }); assert.equal(generated.data.record.result.decision, 'refuse');
   assert.equal((await request('/api/execute', { decisionId: generated.data.record.id })).status, 409);
 });
-test('client allowlist rejection is shown as an application-access problem', async () => {
+test('provider access rejection is reported without guessing its cause', async () => {
   const generated = await request('/api/agent/propose', { resourceId: await run(), request: '[client-blocked] Refund $35.' });
-  assert.equal(generated.status, 502); assert.match(generated.data.error, /application client/); assert.ok(!JSON.stringify(generated.data).includes('unit-test-secret'));
+  assert.equal(generated.status, 502); assert.match(generated.data.error, /key or model access/); assert.ok(!JSON.stringify(generated.data).includes('unit-test-secret'));
 });
 test('context changes while inference runs invalidate its proposal', async () => {
   const resourceId = await run('deploy-safe'); const pending = request('/api/agent/propose', { resourceId, request: '[slow] Deploy to staging.' });

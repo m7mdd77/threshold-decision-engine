@@ -15,7 +15,7 @@ Threshold evaluates structured agent proposals against server-held evidence and 
 - Hash-linked audit and JSON export.
 - D1 persistence, isolated HttpOnly sessions, CSRF/origin checks, optimistic concurrency and bounded public quotas.
 
-Public visitors select synthetic operator personas. This demonstrates scope checks; it is not production user authentication. Paid model inference is intentionally absent from the public site. The separate local build uses the genuine supported Claude Code client to call DeepSeek v4 Flash through AgentRouter, with tools disabled. A local refund inference succeeded with 658 reported tokens. After two timeout checks without effects, a fresh production proposal succeeded with 696 tokens, escalated for scoped operator review, then produced a separate sandbox receipt with valid audit integrity. No API key, local database or client config is uploaded here.
+Public visitors select synthetic operator personas. This demonstrates scope checks; it is not production user authentication. Paid model inference is intentionally absent from the public site. The separate local build now uses Qwen 3.8 27B through the bounded direct Cerebras API; see [current setup and verification](local/docs/cerebras-migration.md). The following token counts describe the original historical release. A local refund inference succeeded with 658 reported tokens. After two timeout checks without effects, a fresh production proposal succeeded with 696 tokens, escalated for scoped operator review, then produced a separate sandbox receipt with valid audit integrity. No API key, local database or client config is uploaded here.
 
 ## Run a clean clone
 

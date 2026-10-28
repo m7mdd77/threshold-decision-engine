@@ -1,4 +1,4 @@
-Current runtime: **GPT 6.1 Sol through AgentRouter**. See [configuration and verification](docs/sol-migration.md). Dated DeepSeek recordings remain historical evidence.
+Current runtime: **Qwen 3.8 27B through Cerebras**. See [configuration and fresh verification](docs/cerebras-migration.md). Earlier provider recordings and evidence remain dated history.
 
 # Threshold — The Decision Engine
 
@@ -6,7 +6,7 @@ A working local prototype for the [DOO Decision Engine mission](https://build.do
 
 ## Run
 
-Requires **Node.js 24 or newer**. Install the locked dependencies with npm ci. Manual evaluation needs no API key. AI proposals use a server-side AgentRouter key and the genuine installed Claude Code client with tools disabled (see docs/agent-setup.md). An official Anthropic SDK adapter remains available for accounts allowing direct API clients. SQLite uses Node's built-in `node:sqlite` module, which is experimental in Node 24.
+Requires **Node.js 24 or newer**. Install the locked dependencies with npm ci. Manual evaluation needs no API key. AI proposals use a server-side Cerebras key and the bounded direct API adapter (see docs/cerebras-migration.md). SQLite uses Node's built-in `node:sqlite` module, which is experimental in Node 24.
 
 From this folder:
 
@@ -63,7 +63,7 @@ flowchart LR
 - `src/catalog.js`: three domains and thirteen synthetic scenarios.
 - `src/engine.js`: a pure policy evaluator with explicit precedence: **hard deny → missing evidence → wait condition → operator review → execute**.
 - `src/store.js`: SQLite transactions, sandbox records, immutable decision snapshots through the application API, budget checks, effects, and audit chaining.
-- `src/agent.js` and `src/cli-client.js`: bounded model proposals through the supported client or direct API, strict output validation, usage metadata, and no automatic execution.
+- `src/agent.js` and `src/cerebras-client.js`: bounded model proposals through the direct Cerebras API, strict output validation, usage metadata, and no automatic execution.
 - `server.js`: bounded JSON HTTP API, host/origin checks, session isolation, CSRF protection, and static assets.
 - `public/`: responsive decision lab, ledger, and field guide.
 - `test/`: domain, persistence, execution-boundary, and HTTP tests.
@@ -84,7 +84,7 @@ All POST requests need `Content-Type: application/json` and `X-CSRF-Token` from 
 
 ## Honest limits and remaining work
 
-- This version uses **synthetic evidence**, a **deterministic decision engine**, and **persistent sandbox actions**. DeepSeek v4 Flash proposals through AgentRouter's supported client are verified locally. No payment provider, deployment platform, or employee directory is connected.
+- This version uses **synthetic evidence**, a **deterministic decision engine**, and **persistent sandbox actions**. Qwen 3.8 27B proposals through Cerebras are verified locally. No payment provider, deployment platform, or employee directory is connected.
 - Confidence is an evidence-quality heuristic, **not a calibrated probability**. Source reliability values are synthetic fixtures. Risk is a visible additive policy score.
 - Ask, defer, and escalation identify the required next step. The prototype implements a scoped operator inbox using selectable synthetic personas. Real identity authentication and production authorization are not implemented; hard refusals remain binding.
 - SQLite makes the local gate/write/receipt transaction atomic. Real external writes require provider idempotency, transactional outbox/reconciliation, and explicit handling of unknown outcomes; a local database transaction alone cannot make an external API atomic.

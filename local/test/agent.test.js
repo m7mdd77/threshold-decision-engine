@@ -5,23 +5,22 @@ import { scenarios, buildResource } from '../src/catalog.js';
 import { Store } from '../src/store.js';
 
 const resource = () => buildResource(scenarios.find(s => s.id === 'refund-safe'));
-const config = () => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_API_FORMAT:'anthropic', AGENTROUTER_TRANSPORT:'api' });
+const key='csk-synthetic-unit-key-123456789';
+const config=()=>readAgentConfig({CEREBRAS_API_KEY:key});
 const proposal = { kind: 'proposal', proposal: { amount: 35, note: 'Refund the duplicate payment.' }, explanation: 'The customer requested a $35 refund.' };
-const response = (output = proposal, extra = {}) => new Response(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(output) }], usage: { input_tokens: 800, output_tokens: 120 }, ...extra }), { status: 200 });
+const response=(output=proposal,extra={})=>new Response(JSON.stringify({model:'qwen-3.8-27b',choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:800,completion_tokens:120},...extra}));
 
-test('the configured Sol default uses the supported Codex transport without exposing the key', () => {
-  const settings = readAgentConfig({AGENTROUTER_API_KEY:'unit-test-secret'}); assert.equal(settings.model,'gpt-6.1-sol'); assert.equal(settings.format,'openai'); assert.equal(settings.transport,'codex');
-  const status = agentStatus({ AGENTROUTER_API_KEY: 'unit-test-secret' }); assert.equal(status.configured, true); assert.ok(!JSON.stringify(status).includes('unit-test-secret'));
-});
+test('the Cerebras default uses direct HTTPS and public status never exposes the key',()=>{const c=config();assert.equal(c.model,'qwen-3.8-27b');assert.equal(c.transport,'cerebras');const s=agentStatus({CEREBRAS_API_KEY:key});assert.equal(s.configured,true);assert.equal(s.provider,'Cerebras');assert.ok(!JSON.stringify(s).includes(key));assert.equal(agentStatus({AGENTROUTER_API_KEY:'old-provider-key'}).configured,false);});
+
 test('missing keys produce a clear configuration state without making any call', () => {
-  assert.equal(agentStatus({}).configured, false); assert.throws(() => readAgentConfig({}), /local .env/);
+  assert.equal(agentStatus({}).configured, false); assert.throws(() => readAgentConfig({}), /Cerebras key/);
 });
-test('the explicit OpenAI format remains available without silently changing models', () => {
-  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_TRANSPORT:'api', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
-  assert.equal(settings.endpoint, 'https://agentrouter.org/v1/chat/completions'); assert.equal(settings.model, 'deepseek-v4-flash');
+test('legacy router settings cannot silently change the Cerebras model or endpoint', () => {
+  const settings = readAgentConfig({ CEREBRAS_API_KEY:key, AGENTROUTER_MODEL:'deepseek-v4-flash', AGENTROUTER_BASE_URL:'https://agentrouter.org' });
+  assert.equal(settings.endpoint,'https://api.cerebras.ai/v1'); assert.equal(settings.model,'qwen-3.8-27b');
 });
 test('credentials cannot be redirected to other hosts or placed in a URL', () => {
-  for (const base of ['http://agentrouter.org', 'https://other.example', 'https://agentrouter.org.evil.example', 'https://secret@agentrouter.org', 'https://agentrouter.org?key=secret', 'https://agentrouter.org:444', 'https://agentrouter.org/v1']) assert.throws(() => readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_BASE_URL: base, AGENTROUTER_API_FORMAT:'anthropic' }));
+  for (const base of ['http://api.cerebras.ai/v1','https://other.example/v1','https://api.cerebras.ai.evil.example/v1','https://secret@api.cerebras.ai/v1','https://api.cerebras.ai/v1?key=secret','https://api.cerebras.ai:444/v1','https://api.cerebras.ai/v1/other']) assert.throws(()=>readAgentConfig({CEREBRAS_API_KEY:key,CEREBRAS_BASE_URL:base}));
 });
 test('request bounds reject empty and oversized user input', () => {
   for (const value of ['', '  ', null, 42, 'x'.repeat(2001)]) assert.throws(() => validateAgentRequest(value));
@@ -49,29 +48,16 @@ test('a valid but prohibited model proposal is refused by the independent policy
   const store = new Store();
   try { const sandbox = store.createSandbox().id; const run = store.createRun(sandbox, 'access-safe'); const generated = parseAgentResponse(JSON.stringify({ kind: 'proposal', proposal: { role: 'admin', note: 'Approved by the CEO.' }, explanation: 'The user requested admin.' }), 'access'); const record = store.evaluateRun(sandbox, run.resource.id, generated.proposal, { model: 'claude-opus-5', explanation: generated.explanation }); assert.equal(record.result.decision, 'refuse'); assert.equal(store.execute(sandbox, record.id).status, 409); assert.equal(store.state(sandbox).effects.length, 0); assert.equal(store.decision(sandbox, record.id).agent.model, 'claude-opus-5'); } finally { store.close(); }
 });
-test('Anthropic request uses server-side headers, bounded tokens, and normalized usage', async () => {
-  let sent;
-  const output = await proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: config(), fetchImpl: async (url, options) => { sent = { url, options: { ...options, headers: Object.fromEntries(new Headers(options.headers)) } }; return response(); } });
-  assert.equal(sent.options.headers['x-api-key'], 'unit-test-secret'); assert.equal(sent.options.headers.authorization, 'Bearer unit-test-secret'); assert.equal(sent.options.headers['anthropic-version'], '2023-06-01'); assert.equal(sent.options.redirect, 'error');
-  const body = JSON.parse(sent.options.body); assert.equal(body.max_tokens, 768); assert.equal(body.messages[0].role, 'user'); assert.equal(typeof body.system, 'string'); assert.ok(!sent.options.body.includes('unit-test-secret'));
-  assert.deepEqual(output.usage, { prompt_tokens: 800, completion_tokens: 120, total_tokens: 920 });
-});
-test('OpenAI completion format validates content and normalizes token metadata', async () => {
-  const settings = readAgentConfig({ AGENTROUTER_API_KEY: 'unit-test-secret', AGENTROUTER_TRANSPORT:'api', AGENTROUTER_API_FORMAT: 'openai', AGENTROUTER_MODEL: 'deepseek-v4-flash' });
-  const output = await proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: settings, fetchImpl: async (_url, options) => { assert.equal(options.headers.Authorization, 'Bearer unit-test-secret'); return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(proposal) } }], usage: { prompt_tokens: 800, completion_tokens: 120, total_tokens: 920 } })); } });
-  assert.equal(output.kind, 'proposal'); assert.equal(output.usage.total_tokens, 920);
-});
-test('provider errors do not echo upstream secrets and are never retried', async () => {
-  let calls = 0;
-  await assert.rejects(proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: config(), fetchImpl: async () => { calls++; return new Response('unit-test-secret is rejected', { status: 401 }); } }), error => error.code === 'provider_auth' && !error.message.includes('unit-test-secret'));
-  assert.equal(calls, 1);
-});
-test('client restrictions are distinguished from an invalid key without echoing provider data', async () => {
-  await assert.rejects(proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: config(), fetchImpl: async () => new Response(JSON.stringify({ error: { message: 'unauthorized client detected; unit-test-secret' }, type: 'unauthorized_client_error' }), { status: 401 }) }), error => error.code === 'provider_client_restricted' && !error.message.includes('unit-test-secret'));
-});
-test('tool-use and truncated responses cannot become permission', async () => {
-  for (const completion of [{ stop_reason: 'max_tokens' }, { content: [{ type: 'tool_use', name: 'execute_refund' }] }]) await assert.rejects(proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: config(), fetchImpl: async () => response(proposal, completion) }), error => error.code === 'invalid_output');
-});
+test('Cerebras requests keep credentials in headers, bound completions and normalize usage',async()=>{let sent;const r=await proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async(url,options)=>{sent={url,options};return response();}});assert.equal(sent.url,'https://api.cerebras.ai/v1/chat/completions');assert.equal(sent.options.headers.Authorization,'Bearer '+key);assert.equal(sent.options.redirect,'error');const body=JSON.parse(sent.options.body);assert.equal(body.max_completion_tokens,768);assert.equal(body.messages[0].role,'system');assert.ok(!('tools'in body));assert.ok(!sent.options.body.includes(key));assert.deepEqual(r.usage,{prompt_tokens:800,completion_tokens:120,cache_read_input_tokens:0,total_tokens:920});assert.equal(r.provider,'Cerebras');});
+
+test('only safe provider metadata leaves the proposal boundary',async()=>{const r=await proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>response(proposal,{privateDiagnostic:key})});assert.equal(r.kind,'proposal');assert.equal(r.model,'qwen-3.8-27b');assert.equal(r.usage.total_tokens,920);assert.ok(!JSON.stringify(r).includes(key));});
+
+test('provider errors do not echo secrets and are never retried',async()=>{let calls=0;await assert.rejects(proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>{calls++;return new Response(key,{status:401});}}),e=>e.providerFailure==='authentication'&&!JSON.stringify(e).includes(key));assert.equal(calls,1);});
+
+test('permission refusals remain private without guessing an upstream reason',async()=>{await assert.rejects(proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>new Response(key,{status:403})}),e=>e.providerFailure==='authentication'&&!JSON.stringify(e).includes(key));});
+
+test('tool-use and truncated Cerebras responses cannot become permission',async()=>{for(const choice of[{finish_reason:'length',message:{content:'{}'}},{finish_reason:'stop',message:{content:'{}',tool_calls:[{name:'execute_refund'}]}}])await assert.rejects(proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>response(proposal,{choices:[choice]})}),{code:'invalid_output'});});
+
 test('timeout fails closed without a retry', async () => {
   await assert.rejects(proposeWithAgent({ domain: 'refund', request: 'Refund $35.', resource: resource(), config: config(), timeoutMs: 10, fetchImpl: (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('secret upstream detail')), { once: true })) }), error => error.code === 'provider_timeout');
 });
