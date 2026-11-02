@@ -1,0 +1,37 @@
+{
+  "at": "2026-11-02T09:16:57.221Z",
+  "provider": "Cerebras",
+  "model": "gpt-oss-120b",
+  "credentialSource": "New operator-selected private key file; no credential contents or personal file paths published.",
+  "tests": {
+    "passed": 79,
+    "failed": 0,
+    "scope": "Local regression tests with injected provider responses; separate from genuine model evidence."
+  },
+  "local": {
+    "name": "threshold",
+    "ok": true,
+    "model": "gpt-oss-120b",
+    "kind": "proposal",
+    "usage": {
+      "prompt_tokens": 500,
+      "completion_tokens": 71,
+      "cache_read_input_tokens": 0,
+      "total_tokens": 571
+    },
+    "elapsedMs": 720
+  },
+  "previousLocalAttempts": [],
+  "publicVerification": {
+    "scope": "Public deterministic companion. Paid model path remains local; no public model call claimed."
+  },
+  "deployment": {
+    "name": "threshold",
+    "project_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b",
+    "version_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b~appgver_bb1481c024488191a31d22019b8940c0",
+    "deployment_id": "appgdep_6ae85347ce08819184f048a7cb3d465c",
+    "status": "succeeded",
+    "url": "https://threshold-decision-engine.choggyacc.chatgpt.site",
+    "commit_sha": "8f1f81204cefe10e8b47cca79e24a4c3a2166617"
+  }
+}
