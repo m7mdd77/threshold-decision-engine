@@ -11,5 +11,5 @@ globalThis.fetch = async (url, options) => {
   const proposal = domain === 'refund' ? { amount: 35, note: 'Refund $35.' } : domain === 'deploy' ? { target: 'staging', note: 'Deploy to staging.' } : { role: 'admin', note: 'Grant admin access.' };
   const output = request.includes('[clarify]') ? { kind: 'clarification', question: 'How much should be refunded?', explanation: 'No amount was specified.' } : { kind: 'proposal', proposal, explanation: 'A mocked model proposed the requested action.' };
   if (request.includes('[forged]')) output.proposal.approved = true;
-  return new Response(JSON.stringify({model:'gpt-oss-120b',choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:800,completion_tokens:120}}));
+  return new Response(JSON.stringify({model:'qwen-3.8-27b',choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:800,completion_tokens:120}}));
 };

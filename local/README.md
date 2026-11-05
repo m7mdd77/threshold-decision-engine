@@ -1,4 +1,4 @@
-Current runtime: **GPT-OSS 120B through Cerebras**, using the operator's newly selected private key. See [current verification and setup](docs/gpt-oss-migration.md). Earlier Qwen, Sol, Astra and DeepSeek evidence remains dated history.
+Current runtime: **Qwen 3.8 27B through Cerebras**, selected on 5 November 2026 with the current private key. See [current setup and verification](docs/qwen-nov5-migration.md). Earlier model records and recordings remain dated history.
 
 # Threshold — The Decision Engine
 
@@ -84,7 +84,7 @@ All POST requests need `Content-Type: application/json` and `X-CSRF-Token` from 
 
 ## Honest limits and remaining work
 
-- This version uses **synthetic evidence**, a **deterministic decision engine**, and **persistent sandbox actions**. GPT-OSS 120B proposals through Cerebras are verified locally. No payment provider, deployment platform, or employee directory is connected.
+- This version uses **synthetic evidence**, a **deterministic decision engine**, and **persistent sandbox actions**. Qwen 3.8 27B proposals through Cerebras are verified locally. No payment provider, deployment platform, or employee directory is connected.
 - Confidence is an evidence-quality heuristic, **not a calibrated probability**. Source reliability values are synthetic fixtures. Risk is a visible additive policy score.
 - Ask, defer, and escalation identify the required next step. The prototype implements a scoped operator inbox using selectable synthetic personas. Real identity authentication and production authorization are not implemented; hard refusals remain binding.
 - SQLite makes the local gate/write/receipt transaction atomic. Real external writes require provider idempotency, transactional outbox/reconciliation, and explicit handling of unknown outcomes; a local database transaction alone cannot make an external API atomic.

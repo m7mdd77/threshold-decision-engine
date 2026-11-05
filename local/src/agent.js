@@ -10,7 +10,7 @@ const text = (value, max) => typeof value === 'string' && value.trim().length > 
 const exactKeys = (value, keys) => Object.keys(value).length === keys.length && Object.keys(value).every(key => keys.includes(key));
 
 export function readAgentConfig(env=process.env){const config=cerebrasConfig(env);if(!config.configured)throw new AgentError(503,'not_configured','Configure the local Cerebras key or key file.');return config;}
-export function agentStatus(env=process.env){try{const c=readAgentConfig(env);return{configured:true,provider:'Cerebras',model:c.model,format:'openai',transport:'cerebras',promptVersion:PROMPT_VERSION};}catch(error){return{configured:false,provider:'Cerebras',model:'gpt-oss-120b',promptVersion:PROMPT_VERSION,message:error.message};}}
+export function agentStatus(env=process.env){try{const c=readAgentConfig(env);return{configured:true,provider:'Cerebras',model:c.model,format:'openai',transport:'cerebras',promptVersion:PROMPT_VERSION};}catch(error){return{configured:false,provider:'Cerebras',model:'qwen-3.8-27b',promptVersion:PROMPT_VERSION,message:error.message};}}
 export function validateAgentRequest(request) {
   if (!text(request, 2000)) throw new AgentError(400, 'invalid_request', 'Enter an action request between 1 and 2,000 characters.');
   return request.trim();

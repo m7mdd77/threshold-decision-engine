@@ -1,0 +1,37 @@
+{
+  "at": "2026-11-05T06:58:38.310Z",
+  "provider": "Cerebras",
+  "model": "qwen-3.8-27b",
+  "currentPrivateKeyReferencePreserved": true,
+  "tests": {
+    "passed": 79,
+    "failed": 0,
+    "scope": "Local regression tests with injected responses, separate from actual model calls."
+  },
+  "local": {
+    "name": "threshold",
+    "ok": true,
+    "model": "qwen-3.8-27b",
+    "kind": "proposal",
+    "usage": {
+      "prompt_tokens": 537,
+      "completion_tokens": 71,
+      "cache_read_input_tokens": 0,
+      "total_tokens": 608
+    },
+    "elapsedMs": 632
+  },
+  "previousLocalAttempts": [],
+  "publicVerification": {
+    "scope": "Public deterministic companion. Paid inference remains local; no public model call claimed."
+  },
+  "deployment": {
+    "name": "threshold",
+    "project_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b",
+    "version_id": "appgprj_6acd8861c2e48191bf89246b23e8f15b~appgver_9e0017c08e808191896520ac75aacb8d",
+    "deployment_id": "appgdep_6aec2793fe288191a6095619d3ac6784",
+    "status": "succeeded",
+    "url": "https://threshold-decision-engine.choggyacc.chatgpt.site",
+    "commit_sha": "9b638c81739646ccc8960ec376aad5e0049aa1a3"
+  }
+}

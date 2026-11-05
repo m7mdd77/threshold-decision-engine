@@ -8,16 +8,16 @@ const resource = () => buildResource(scenarios.find(s => s.id === 'refund-safe')
 const key='csk-synthetic-unit-key-123456789';
 const config=()=>readAgentConfig({CEREBRAS_API_KEY:key});
 const proposal = { kind: 'proposal', proposal: { amount: 35, note: 'Refund the duplicate payment.' }, explanation: 'The customer requested a $35 refund.' };
-const response=(output=proposal,extra={})=>new Response(JSON.stringify({model:'gpt-oss-120b',choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:800,completion_tokens:120},...extra}));
+const response=(output=proposal,extra={})=>new Response(JSON.stringify({model:'qwen-3.8-27b',choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],usage:{prompt_tokens:800,completion_tokens:120},...extra}));
 
-test('the Cerebras default uses direct HTTPS and public status never exposes the key',()=>{const c=config();assert.equal(c.model,'gpt-oss-120b');assert.equal(c.transport,'cerebras');const s=agentStatus({CEREBRAS_API_KEY:key});assert.equal(s.configured,true);assert.equal(s.provider,'Cerebras');assert.ok(!JSON.stringify(s).includes(key));assert.equal(agentStatus({AGENTROUTER_API_KEY:'old-provider-key'}).configured,false);});
+test('the Cerebras default uses direct HTTPS and public status never exposes the key',()=>{const c=config();assert.equal(c.model,'qwen-3.8-27b');assert.equal(c.transport,'cerebras');const s=agentStatus({CEREBRAS_API_KEY:key});assert.equal(s.configured,true);assert.equal(s.provider,'Cerebras');assert.ok(!JSON.stringify(s).includes(key));assert.equal(agentStatus({AGENTROUTER_API_KEY:'old-provider-key'}).configured,false);});
 
 test('missing keys produce a clear configuration state without making any call', () => {
   assert.equal(agentStatus({}).configured, false); assert.throws(() => readAgentConfig({}), /Cerebras key/);
 });
 test('legacy router settings cannot silently change the Cerebras model or endpoint', () => {
   const settings = readAgentConfig({ CEREBRAS_API_KEY:key, AGENTROUTER_MODEL:'deepseek-v4-flash', AGENTROUTER_BASE_URL:'https://agentrouter.org' });
-  assert.equal(settings.endpoint,'https://api.cerebras.ai/v1'); assert.equal(settings.model,'gpt-oss-120b');
+  assert.equal(settings.endpoint,'https://api.cerebras.ai/v1'); assert.equal(settings.model,'qwen-3.8-27b');
 });
 test('credentials cannot be redirected to other hosts or placed in a URL', () => {
   for (const base of ['http://api.cerebras.ai/v1','https://other.example/v1','https://api.cerebras.ai.evil.example/v1','https://secret@api.cerebras.ai/v1','https://api.cerebras.ai/v1?key=secret','https://api.cerebras.ai:444/v1','https://api.cerebras.ai/v1/other']) assert.throws(()=>readAgentConfig({CEREBRAS_API_KEY:key,CEREBRAS_BASE_URL:base}));
@@ -50,7 +50,7 @@ test('a valid but prohibited model proposal is refused by the independent policy
 });
 test('Cerebras requests keep credentials in headers, bound completions and normalize usage',async()=>{let sent;const r=await proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async(url,options)=>{sent={url,options};return response();}});assert.equal(sent.url,'https://api.cerebras.ai/v1/chat/completions');assert.equal(sent.options.headers.Authorization,'Bearer '+key);assert.equal(sent.options.redirect,'error');const body=JSON.parse(sent.options.body);assert.equal(body.max_completion_tokens,768);assert.equal(body.messages[0].role,'system');assert.ok(!('tools'in body));assert.ok(!sent.options.body.includes(key));assert.deepEqual(r.usage,{prompt_tokens:800,completion_tokens:120,cache_read_input_tokens:0,total_tokens:920});assert.equal(r.provider,'Cerebras');});
 
-test('only safe provider metadata leaves the proposal boundary',async()=>{const r=await proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>response(proposal,{privateDiagnostic:key})});assert.equal(r.kind,'proposal');assert.equal(r.model,'gpt-oss-120b');assert.equal(r.usage.total_tokens,920);assert.ok(!JSON.stringify(r).includes(key));});
+test('only safe provider metadata leaves the proposal boundary',async()=>{const r=await proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>response(proposal,{privateDiagnostic:key})});assert.equal(r.kind,'proposal');assert.equal(r.model,'qwen-3.8-27b');assert.equal(r.usage.total_tokens,920);assert.ok(!JSON.stringify(r).includes(key));});
 
 test('provider errors do not echo secrets and are never retried',async()=>{let calls=0;await assert.rejects(proposeWithAgent({domain:'refund',request:'Refund $35.',resource:resource(),config:config(),fetchImpl:async()=>{calls++;return new Response(key,{status:401});}}),e=>e.providerFailure==='authentication'&&!JSON.stringify(e).includes(key));assert.equal(calls,1);});
 

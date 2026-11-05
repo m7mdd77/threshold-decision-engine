@@ -4,7 +4,7 @@ import {cerebrasConfig,invokeCerebras} from '../src/cerebras-client.js';
 const key='csk-synthetic-unit-key-123456789';
 const config=()=>cerebrasConfig({CEREBRAS_API_KEY:key});
 const messages=[{role:'system',content:'Return one JSON object only. No tools.'},{role:'user',content:'Synthetic proposal request.'}];
-const result=(extra={})=>new Response(JSON.stringify({model:'gpt-oss-120b',choices:[{finish_reason:'stop',message:{content:'{"ok":true}'}}],usage:{prompt_tokens:90,completion_tokens:12,prompt_tokens_details:{cached_tokens:20}},...extra}));
+const result=(extra={})=>new Response(JSON.stringify({model:'qwen-3.8-27b',choices:[{finish_reason:'stop',message:{content:'{"ok":true}'}}],usage:{prompt_tokens:90,completion_tokens:12,prompt_tokens_details:{cached_tokens:20}},...extra}));
 
 test('Cerebras configuration rejects old credentials and unapproved destinations or models',()=>{
  assert.equal(cerebrasConfig({AGENTROUTER_API_KEY:'old-key'}).configured,false);
@@ -14,8 +14,8 @@ test('Cerebras configuration rejects old credentials and unapproved destinations
 });
 test('one bounded truthful HTTPS call returns normalized actual usage without tools or key in the prompt',async()=>{
  let count=0;
- const r=await invokeCerebras({config:config(),messages,fetchImpl:async(url,options)=>{count++;assert.equal(url,'https://api.cerebras.ai/v1/chat/completions');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);const body=JSON.parse(options.body);assert.equal(body.model,'gpt-oss-120b');assert.equal(body.reasoning_effort,'low');assert.equal(body.reasoning_format,'hidden');assert.equal(body.max_completion_tokens,2048);assert.deepEqual(body.response_format,{type:'json_object'});assert.ok(!('tools'in body));assert.ok(!options.body.includes(key));return result();}});
- assert.equal(count,1);assert.equal(r.model,'gpt-oss-120b');assert.equal(r.content[0].text,'{"ok":true}');assert.deepEqual(r.usage,{input_tokens:70,output_tokens:12,cache_read_input_tokens:20});
+ const r=await invokeCerebras({config:config(),messages,fetchImpl:async(url,options)=>{count++;assert.equal(url,'https://api.cerebras.ai/v1/chat/completions');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);const body=JSON.parse(options.body);assert.equal(body.model,'qwen-3.8-27b');assert.equal(body.reasoning_effort,'none');assert.ok(!('reasoning_format' in body));assert.equal(body.max_completion_tokens,2048);assert.deepEqual(body.response_format,{type:'json_object'});assert.ok(!('tools'in body));assert.ok(!options.body.includes(key));return result();}});
+ assert.equal(count,1);assert.equal(r.model,'qwen-3.8-27b');assert.equal(r.content[0].text,'{"ok":true}');assert.deepEqual(r.usage,{input_tokens:70,output_tokens:12,cache_read_input_tokens:20});
 });
 test('tool calls, truncated output, wrong model and echoed credentials are refused',async()=>{
  for(const extra of[{choices:[{finish_reason:'length',message:{content:'{}'}}]},{choices:[{finish_reason:'stop',message:{content:'{}',tool_calls:[{name:'execute'}]}}]},{model:'another-model'},{choices:[{finish_reason:'stop',message:{content:JSON.stringify({key})}}]}])await assert.rejects(invokeCerebras({config:config(),messages,fetchImpl:async()=>result(extra)}),e=>e.code==='invalid_output'&&!e.message.includes(key));

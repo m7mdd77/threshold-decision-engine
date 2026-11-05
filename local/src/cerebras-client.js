@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {AgentError} from './agent-error.js';
 
-export const CEREBRAS_MODEL='gpt-oss-120b';
+export const CEREBRAS_MODEL='qwen-3.8-27b';
 const BASE='https://api.cerebras.ai/v1';
 const KEY=/^csk-[A-Za-z0-9_-]{15,}$/;
 const number=value=>Number.isSafeInteger(value)&&value>=0?value:0;
@@ -44,7 +44,7 @@ export async function invokeCerebras({config,messages,signal,fetchImpl=fetch,max
  const abort=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(90000)]);
  try{
   abort.throwIfAborted();
-  const response=await fetchImpl(BASE+'/chat/completions',{method:'POST',redirect:'error',signal:abort,headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,max_completion_tokens:maxTokens,reasoning_effort:'low',reasoning_format:'hidden',temperature:0.2,stream:false,...(jsonMode?{response_format:{type:'json_object'}}:{})})});
+  const response=await fetchImpl(BASE+'/chat/completions',{method:'POST',redirect:'error',signal:abort,headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.key},body:JSON.stringify({model:config.model,messages,max_completion_tokens:maxTokens,reasoning_effort:'none',temperature:0.2,stream:false,...(jsonMode?{response_format:{type:'json_object'}}:{})})});
   if(!response.ok){
    const delay=retryDelay(response.headers.get('retry-after'));await response.body?.cancel().catch(()=>{});
    if(response.status===429)throw fail('client_request_failed','Cerebras is rate-limiting requests. No automatic retry was made.','rate_limit',429,{retryAfterMs:delay});
